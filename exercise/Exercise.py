@@ -1,8 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import sys
 import subprocess
+import numpy
+import matplotlib.pyplot as plot
+from matplotlib.backends.backend_pdf import PdfPages
 
 class Exercise():
     def __init__(self, name, seed, plain, plainSolution, tex, texSolution):
@@ -12,11 +15,12 @@ class Exercise():
         self.plainSolution = plainSolution
         self.tex = tex
         self.texSolution = texSolution
+        self.graphicCount = 0
 
     def setPlain(self, plain):
         self.plain = plain
 
-    def setPlainSolution(plainSolution):
+    def setPlainSolution(self, plainSolution):
         self.plainSolution = plainSolution
 
     def setTex(self, tex):
@@ -36,7 +40,7 @@ class Exercise():
         exerciseTexFile = open(exerciseTexFileName, "w")
         exerciseTexFile.write(exerciseTex)
         exerciseTexFile.close()
-        returnCode = subprocess.call("pdflatex -halt-on-error -output-directory ../tmp/ %s" % exerciseTexFileName, stdout=subprocess.PIPE, shell=True)
+        returnCode = subprocess.call("pdflatex -halt-on-error -output-directory ../tmp/ '%s'" % exerciseTexFileName, stdout=subprocess.PIPE, shell=True)
         return "../tmp/%s-%s%s.pdf" % (self.getName(), self.seed, suffix)
 
     def getPDF(self):
@@ -54,17 +58,27 @@ class Exercise():
     def getName(self):
         return self.name
 
-#seed = sys.argv[1]
+    def plotFunction(self, x = None, y = None, pointList = None, minX = 5, maxX = 5, minY = 5, maxY = 5):
+        self.graphicCount += 1
+        exerciseGraphicFile = "../tmp/%s-%s-%i.pdf" % (self.getName(), self.seed, self.graphicCount)
+        with PdfPages(exerciseGraphicFile) as pdf:
+            figure = plot.figure(figsize = (10, 10))
+            ax = figure.add_subplot(111, aspect = "equal")
+            ax.xaxis.set_ticks([i for i in range(-10, 10)])
+            ax.yaxis.set_ticks([i for i in range(-10, 10)])
 
-#random.seed(seed)
-#summand1 = random.randint(1, 9)
-#summand2 = random.randint(1, 9)
-#name = "Summe"
-#plain = "%i + %i = ?" % (summand1, summand2)
-#tex = "$ %s $" % plain
-#plainSolution = "%i + %i = %i" % (summand1, summand2, summand1 + summand2)
-#texSolution = "$ %s $" % plainSolution
+            ax.spines['left'].set_position('zero')
+            ax.spines['right'].set_color('none')
+            ax.spines['bottom'].set_position('zero')
+            ax.spines['top'].set_color('none')
 
-#exercise = Exercise(name, seed, plain, plainSolution, tex, texSolution)
-#print exercise.getPDF()
-#print exercise.getPDFSolution()
+            ax.grid(True)
+            plot.axis([-5, 5, -5, 5])
+            if x != None and y != None:
+                plot.plot(x, y)
+            if pointList:
+                plot.plot(*zip(*pointList), marker='o', color='r', ls='')
+            pdf.savefig()
+            plot.close()
+        return exerciseGraphicFile
+
